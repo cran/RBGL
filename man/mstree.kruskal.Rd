@@ -1,0 +1,41 @@
+\name{mstree.kruskal}
+\alias{mstree.kruskal}
+%- Also NEED an `\alias' for EACH other topic documented here.
+\title{ Kruskal's minimum spanning tree in boost }
+\description{
+compute the minimum spanning tree (MST) for
+a graph and return a representation in matrices
+}
+\usage{
+mstree.kruskal(x) 
+}
+%- maybe also `usage' for other objects documented here.
+\arguments{
+  \item{x}{ instance of class graph }
+}
+\details{
+calls to kruskal minimum spanning tree algorithm of Boost graph library
+}
+\value{
+a list
+\item{edgeList}{a matrix m of dimension 2 by number of edges in the
+MST, with m[i,j] the jth node in edge i}
+\item{weights}{a vector of edge weights corresponding to the
+columns of \code{edgeList}}
+\item{nodes}{the vector of nodes of the input graph \code{x}}
+}
+\author{ VJ Carey <stvjc@channing.harvard.edu> }
+
+\seealso{\code{\link{prim.minST}}}
+
+\examples{
+km <- fromGXL(file(system.file("XML/kmstEx.gxl",package="RBGL"), open="r"))
+mstree.kruskal(km)
+edgeData(km, "B", "D", "weight") <- 1.1
+edgeData(km, "B", "E", "weight") <- .95
+mstree.kruskal(km)
+km2 <- fromGXL(file(system.file("XML/telenet.gxl",package="RBGL"), open="r"))
+m <- mstree.kruskal(km2)
+print(sum(m[[2]]))
+}
+\keyword{ graphs }% at least one, from doc/KEYWORDS

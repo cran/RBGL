@@ -1,0 +1,28 @@
+\name{transitive.closure}
+\alias{transitive.closure}
+\title{Compute transitive closure of a directed graph}
+\description{Compute  transitive closure of a directed graph}
+}
+\usage{
+transitive.closure(g)
+}
+\arguments{
+  \item{g}{an instance of the \code{graph} class }
+}
+\details{
+This function calculates the transitive closure of a directed graph.  
+See documentation on this function in Boost Graph Library for more details.
+}
+\value{
+  An object of class \code{graphNEL}.
+}
+\references{Boost Graph Library by Siek et al.  }
+\author{Li Long <li.long@isb-sib.ch>}
+
+\seealso{}
+
+\examples{
+coex <- fromGXL(file(system.file("XML/dijkex.gxl",package="RBGL")))
+transitive.closure(coex)
+}
+\keyword{ models }

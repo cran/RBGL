@@ -1,0 +1,40 @@
+May 2004: avoid edge weight manipulations in R?
+
+Plan of Oct 2003
+----------------
+1) rationalize graph and BGL approaches to undirected
+graphs -- graph wants reciprocated directed edges, BGL
+does not
+2) implement interfaces for
+  a) connected components
+  b) maximum flow/minimum disconnecting set
+
+Plan of July 2003
+1) state basic constraints:
+  a) all edge weights will be coerced to double on way in
+  b) separate C++ functions need to be written for directed
+     and undirected inputs
+2) simplify the C++ source of the R interfaces
+
+Plan of April 2003
+
+1) Use Boost 1.30.0 and make sure library
+still works for tsort and DAG cycle check
+*DONE 2 April
+
+2) convert tsort application to .Call interface
+
+3) get a better grip on how R data can be converted
+to Boost graphs, and bring in a graph with weights
+or distances
+
+4) deploy their MST method and compare to R mstree
+*KMST is in 2 april
+
+5) list the applications we want to have and try
+to get a generic interface
+
+6) consider building boost graphs in R by
+manipulating pointer structures.  perhaps this
+should be the highest priority!  boostGraph
+as a descendant of graph

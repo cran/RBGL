@@ -3,14 +3,17 @@
 \alias{minDegreeOrdering}
 \alias{sloan.ordering}
 \alias{kingOrdering}
+
 \title{Compute vertex ordering for an undirected graph}
+
 \description{Compute vertex ordering for an undirected graph}
-}
+
 \usage{
 cuthill.mckee.ordering(g)
 minDegreeOrdering(g, delta=0)
 sloan.ordering(g, w1=1, w2=2)
 }
+
 \arguments{
   \item{g}{an instance of the \code{graph} class with \code{edgemode}
     \dQuote{undirected}}
@@ -18,12 +21,14 @@ sloan.ordering(g, w1=1, w2=2)
     equal to zero then multiple elimination is enabled. The value of delta 
     specifies the difference between the minimum degree and the degree of 
     vertices that are to be eliminated.}
-  \item{w1}{ 1st Heuristical weight for the Sloan algorithm }
-  \item{w2}{ 2nd Heuristical weight for the Sloan algorithm }
+  \item{w1}{ First heuristic weight for the Sloan algorithm. }
+  \item{w2}{ Second heuristic weight for the Sloan algorithm. }
 }
-\details{
-According to the documentations on these algorithms in Boost Graph Library:
 
+\details{
+ The following details were obtained from 
+the documentation of these algorithms in Boost Graph 
+Library and readers are referred their for even more detail.
 The goal of the Cuthill-Mckee (and reverse Cuthill-Mckee) ordering algorithm is
 to reduce the bandwidth of a graph by reordering the indices assigned to each
 vertex. 
@@ -37,9 +42,8 @@ wavefront of a graph by reordering the indices assigned to each vertex.
 The goal of the King ordering algorithm is to reduce the bandwidth of a graph 
 by reordering the indices assigned to each vertex.
 
-See documentations on these algorithms in Boost Graph Library for more details.
-
 }
+
 \value{
 \item{cuthill.mckee.ordering}{ returns a list with elements:}
      \item{reverse cuthill.mckee.ordering}{the vertices in the new ordering}
@@ -58,13 +62,25 @@ See documentations on these algorithms in Boost Graph Library for more details.
      \item{aver.wavefront}{aver.wavefront of the graph after reordering}
      \item{rms.wavefront}{rms.wavefront of the graph after reordering}
 }
-\references{Boost Graph Library by Siek et al.  }
+
+\references{
+Boost Graph Library ( www.boost.org/libs/graph/doc/index.html )
+
+The Boost Graph Library: User Guide and Reference Manual;
+by Jeremy G. Siek, Lie-Quan Lee, and Andrew Lumsdaine;
+(Addison-Wesley, Pearson Education Inc., 2002), xxiv+321pp.
+ISBN 0-201-72914-8
+}
+
 \author{Li Long <li.long@isb-sib.ch>}
 
 \seealso{ }
 
 \examples{
-coex <- fromGXL(file(system.file("XML/dijkex.gxl",package="RBGL"), open="r"))
+con <- file(system.file("XML/dijkex.gxl",package="RBGL"), open="r")
+coex <- fromGXL(con)
+close(con)
+
 coex <- ugraph(coex)
 cuthill.mckee.ordering(coex)
 minDegreeOrdering(coex)

@@ -1,17 +1,18 @@
 \name{dijkstra.sp}
 \alias{dijkstra.sp}
 \title{ Dijkstra's shortest paths using boost C++ }
-\description{
-dijkstra's shortest paths
-}
+\description{ dijkstra's shortest paths }
+
 \usage{
 dijkstra.sp(g,start=nodes(g)[1], eW=unlist(edgeWeights(g)))
 }
+
 \arguments{
   \item{g}{ instance of class graph }
   \item{start}{ character: node name for start of path }
   \item{eW}{ numeric: edge weights.  }
 }
+
 \details{
 These functions are interfaces to the Boost graph library C++
 routines for Dijkstra's shortest paths.
@@ -36,15 +37,29 @@ found by examining \code{penult[10]}.
 \code{dijkstra.sp}.}
 }
 
+\references{
+Boost Graph Library ( www.boost.org/libs/graph/doc/index.html )
+
+The Boost Graph Library: User Guide and Reference Manual;
+by Jeremy G. Siek, Lie-Quan Lee, and Andrew Lumsdaine;
+(Addison-Wesley, Pearson Education Inc., 2002), xxiv+321pp.
+ISBN 0-201-72914-8
+}
+
 \author{ VJ Carey <stvjc@channing.harvard.edu> }
 
 \seealso{\code{\link{bellman.ford.sp}}, \code{\link{dag.sp}}, \code{\link{johnson.all.pairs.sp}}, \code{\link{sp.between}} }
 
 \examples{
-dd <- fromGXL(file(system.file("XML/dijkex.gxl",package="RBGL"), open="r"))
+con1 <- file(system.file("XML/dijkex.gxl",package="RBGL"), open="r")
+dd <- fromGXL(con1)
+close(con1)
 dijkstra.sp(dd)
 dijkstra.sp(dd,nodes(dd)[2])
-ospf <- fromGXL(file(system.file("XML/ospf.gxl",package="RBGL"), open="r"))
+
+con2 <- file(system.file("XML/ospf.gxl",package="RBGL"), open="r")
+ospf <- fromGXL(con2)
+close(con2)
 dijkstra.sp(ospf,nodes(ospf)[6])
 }
 \keyword{ graphs }

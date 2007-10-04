@@ -175,8 +175,8 @@ dijkstra.sp <- function(g,start=nodes(g)[1], eW=unlist(edgeWeights(g)))
             em <- edgeMatrix(g,TRUE)
     ne <- ncol(em)
 
-    if ( any(eW[eW < 0]) ) 
-      stop("dijkstra.sp requies that all edge weights are nonnegative")
+    if ( any(eW < 0, na.rm=TRUE) ) 
+      stop("'dijkstra.sp' requires that all edge weights are nonnegative")
 
     ans <- .Call("BGL_dijkstra_shortest_paths_D", 
 		as.integer(nv), as.integer(ne), 
@@ -189,76 +189,6 @@ dijkstra.sp <- function(g,start=nodes(g)[1], eW=unlist(edgeWeights(g)))
     ans[["start"]] <- II
     names(ans[["start"]]) <- nN[II]
     ans
-}
-
-sp.between.old <- function(g, start, finish) 
-{
-#
-#simple vectorization  of previous sp.between
-#
-.Deprecated("sp.between", "RBGL")
-if (any(is.numeric(c(start,finish)))) 
-   stop("start and finish are required to be node names; numeric indices not allowed")
-#
- if (length(start) == 1) 
- {
-  if (length(finish) == 1) 
-     return( sp.between.scalar(g, start, finish) )
-  else 
-     { 
-        ans <- lapply( finish, 
-		       function(x,g,start)
-            		   sp.between.scalar(g,start,x), g=g, start=start )
-        names(ans)<-paste(start, finish, sep=":")
-        return(ans)
-     }
- }
- else if (length(finish) == 1)  
- {
-     ans <- lapply(start,
-	           function(x,g,finish) 
-			sp.between.scalar(g,x,finish), g=g, finish=finish)
-     names(ans)  <- paste(start, finish, sep=":")
-     return(ans)
- }
- else if (length(finish) != length(start)) 
-     stop("cannot have different nonunity lengths of start and finish")
- else 
- {
-       sf <- list();
-       for (i in 1:length(start))  
-	   sf[[i]] <- c(start[i],finish[i]);
-
-       ans <- lapply( sf, function(x) sp.between.scalar(g,x[1],x[2])) 
-
-       names(ans)  <- paste(start, finish, sep=":")
-       return(ans)
-      }
- }
-
-sp.between.scalar <- function (g, start, finish, eW=unlist(edgeWeights(g)))
-{
-    f <- finish
-    s <- start
-    if (length(f) >1) stop("finish must be scalar")
-    if (length(s) >1) stop("start must be scalar")
-    no <- nodes(g)
-    if (any(is.na(lk <- match(c(s, f), no))))
-        stop(paste(paste(c(s, f)[is.na(lk)], collapse = " "),
-            "not in nodes of g"))
-    s <- (1:length(no))[no == s]
-    f <- (1:length(no))[no == f]
-    ff <- f
-    sp <- dijkstra.sp(g, start, eW)
-    if (sp$distances[ff] >= .Machine$double.xmax)
-		stop(paste("no path from",no[s],"to",no[f]))
-    pens <- sp$penult
-    path <- f
-    while (path[1] != s) {
-        path <- c(pens[f], path)
-        f <- pens[f]
-    }
-    list(length = sp$distances[ff], path = no[path])
 }
 
 connectedComp <- function (g)
@@ -387,9 +317,16 @@ extractPath <- function(s, f, pens) {
     as.numeric(path)
 }
 
-
-sp.between <- function (g, start, finish)
+sp.between.scalar <- function (g, start, finish)
 {
+    stop("sp.between.scalar is obsolete, use sp.between instead")
+}
+
+sp.between <- function (g, start, finish, detail=TRUE)
+{
+    if ( length(start) <= 0 || length(finish) <= 0 )
+       stop("missing starting or finishing nodes")
+
     nG = nodes(g)
 
     if ( !all(start %in% nG) )
@@ -400,40 +337,37 @@ sp.between <- function (g, start, finish)
 
     ##get the node index, given the name
     nodeind <- function(n) match(n, nG)
-    if (length(finish)>=length(start))
-        fl <- split(finish, start)
-    else if (length(finish)==1)
-        fl <- split(rep(finish,length(start)),start)
-    ust <- unique(start)
+
+    tmp = cbind(start, finish)
+    fl = split(tmp[,2], tmp[,1])
+
+    ustart <- unique(start)
     ans <- list()
     ws <- list()
-    eW = edgeWeights(g)
-    eWW <- unlist(eW)
+    eW=edgeWeights(g)
+    eWW=unlist(eW)
 
-    if ( any(eWW[eWW < 0]) ) 
-      stop("sp.between requies that all edge weights are nonnegative")
+    if ( any(eWW < 0, na.rm=TRUE) ) 
+      stop("'sp.between' requires that all edge weights are nonnegative")
 
-    for (i in 1:length(ust)) 
+    for (i in 1:length(ustart)) 
     {
-        curdi <- dijkstra.sp(g, ust[i], eWW)$penult
-        thiss <- ust[i]
+        curdi <- dijkstra.sp(g, ustart[i], eWW)$penult
+        thiss <- ustart[i]
         thisf <- fl[[thiss]]
         for (j in 1:length(thisf) ) 
         {
-            if ( thiss != thisf[j] )   # dont bother with A->A case
-               ans[[paste(thiss, thisf[j], sep = ":")]] <-
+             ans[[paste(thiss, thisf[j], sep = ":")]] <-
                    nG[extractPath(nodeind(thiss), nodeind(thisf[j]), curdi)]
         }
     }
 
     getw <- function(nl) 
     {
+         res <- NA
+
          # obtain weights in g for path of nodes in char vec nl
-         if ( length(nl) < 2 )
-         {
-            res <- NA
-         }
-         else
+         if ( length(nl) > 1 )
          {
             res <- rep(NA,length(nl)-1)   # only n-1 pairs
 	    wstr <- eW[nl]
@@ -445,15 +379,17 @@ sp.between <- function (g, start, finish)
          res
     }
     ws <- lapply(ans, function(x) getw(x))
-    ls <- lapply(ws, sum)
-    ans2 <- list()
-    ns <- names(ans)
-    for (i in 1:length(ns))
+    lens <- lapply(ws, sum)
+    ans2 <- vector("list", length=length(ans))
+    names(ans2) = names(ans)
+    for (i in 1:length(ans))
     {
-      ans2[[ns[i]]] <- list()
-      ans2[[ns[i]]]$path <- ans[[ns[i]]]
-      ans2[[ns[i]]]$length <- ls[[i]]
-      ans2[[ns[i]]]$pweights <- ws[[i]]
+       if ( detail ) 
+        ans2[[i]] <- list(length=lens[[i]],
+                          path_detail=as.vector(ans[[i]]), 
+                          length_detail=list(ws[[i]]))
+       else
+        ans2[[i]] <- list(length=lens[[i]])
     }
     ans2
 }
@@ -885,8 +821,8 @@ brandes.betweenness.centrality <- function ( g )
    ne <- ncol(em)
    eW <- unlist(edgeWeights(g))
 
-   if ( any(eW[eW <= 0]) ) 
-      stop("brandes.betweenness.centrality requies that all edge weights are positive")
+   if ( any(eW <= 0, na.rm=TRUE) ) 
+      stop("'brandes.betweenness.centrality' requires that all edge weights are positive")
 
    ans <- .Call("BGL_brandes_betweenness_centrality", 
 	        as.integer(nv), as.integer(ne), as.integer(em-1), 
@@ -941,11 +877,13 @@ biConnComp <- function(g)
 		PACKAGE="RBGL")
 
     ans[[2]] <- apply(ans[[2]], 2, function(x, y) y[x+1], nodes(g))
-    rownames(ans[[2]]) <- c("from", "to")
-    rownames(ans[[3]]) <- c("index")
-    list("no. of biconnected components"= ans[[1]],
-         "edges" = ans[[2]],
-         "biconnected components" = ans[[3]])
+    ans[[3]] <- ans[[3]] + 1    # comp no. starts from 1
+
+    r <- vector("list", ans[[1]])
+    for ( i in 1:ans[[1]])
+        r[[i]] <- unique(as.vector(ans[[2]][,which(ans[[3]]==i)]))
+
+    r
 }
 
 articulationPoints <- function(g)
@@ -958,9 +896,8 @@ articulationPoints <- function(g)
         	as.integer(em-1), as.double(rep(1,ne)), 
 		PACKAGE="RBGL")
 
-    ans[[2]] <- sapply(ans[[2]]+1, function(x) { nodes(g)[x] })
-    list("no. of articulation points"= ans [[1]],
-         "articulation points" = ans[[2]])
+    ans <- sapply(ans+1, function(x) { nodes(g)[x] })
+    ans
 }
 
 kingOrdering <- function(g)

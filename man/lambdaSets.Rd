@@ -1,6 +1,8 @@
 \name{lambdaSets}
 \alias{lambdaSets}
+
 \title{Find all the lambda-sets in an undirected graph}
+
 \description{Find all the lambda-sets in an undirected graph }
 
 \usage{
@@ -43,7 +45,10 @@ sets in graph \code{g}.
 \seealso{}
 
 \examples{
-coex <- fromGXL(file(system.file("XML/snalambdaex.gxl",package="RBGL")))
+con <- file(system.file("XML/snalambdaex.gxl",package="RBGL"))
+coex <- fromGXL(con)
+close(con)
+
 lambdaSets(coex)
 }
 

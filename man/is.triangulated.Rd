@@ -1,14 +1,17 @@
 \name{is.triangulated}
 \alias{is.triangulated}
 \title{Decide if a graph is triangulated}
+
 \description{Decide if a graph is triangulated}
-}
+
 \usage{
 is.triangulated(g)
 }
+
 \arguments{
   \item{g}{an instance of the \code{graph} class }
 }
+
 \details{
 An undirected graph G = (V, E) is triangulated (i.e. chordal) if all cycles
 [v1, v2, ..., vk] of length 4 or more have a chord, i.e., an edge
@@ -24,12 +27,13 @@ there is an v in V such that
 }
 
 }
+
 \value{
-The return value is \code{TRUE} if \code{g} is triangulated
- and \code{FALSE} otherwise. An error is thrown if the graph is not 
-undirected; you might use \code{\link[graph]{ugraph}} to compute the underlying 
-graph.
+The return value is \code{TRUE} if \code{g} is triangulated and \code{FALSE} 
+otherwise. An error is thrown if the graph is not undirected; you might use 
+\code{\link[graph]{ugraph}} to compute the underlying graph.
 }
+
 \references{
 Combinatorial Optimization: algorithms and complexity  (p. 403)
 by C. H. Papadimitriou, K. Steiglitz}
@@ -39,9 +43,16 @@ by C. H. Papadimitriou, K. Steiglitz}
 \seealso{}
 
 \examples{
-coex <- fromGXL(file(system.file("XML/conn.gxl",package="RBGL"), open="r"))
+con1 <- file(system.file("XML/conn.gxl",package="RBGL"), open="r")
+coex <- fromGXL(con1)
+close(con1)
+
 is.triangulated(coex)
-coex <- fromGXL(file(system.file("XML/hcs.gxl",package="RBGL"), open="r"))
+
+con2 <- file(system.file("XML/hcs.gxl",package="RBGL"), open="r")
+coex <- fromGXL(con2)
+close(con2)
+
 is.triangulated(coex)
 }
 \keyword{ models }

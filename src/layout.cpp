@@ -2,7 +2,13 @@
 #include <boost/graph/circle_layout.hpp>
 #include <boost/graph/kamada_kawai_spring_layout.hpp>
 #include <boost/graph/random_layout.hpp>
-#include <boost/graph/fruchterman_reingold.hpp>
+
+// Work-around:
+// the original .hpp simply does k*k/d (and the like) without checking d==0,
+// this is particularly troublesome when the given graph is disconnected
+#include "fruchterman_reingold.hpp"
+//#include <boost/graph/fruchterman_reingold.hpp>
+
 #include <boost/graph/gursoy_atun_layout.hpp>
 
 #include <boost/graph/simple_point.hpp>
@@ -24,24 +30,28 @@ typedef enum { E_LAYOUT_CIRCLE,
 extern "C"
 {
     typedef adjacency_list<vecS, vecS, undirectedS,
-    // vertex properties
-    property<vertex_index_t, int,
-    property<vertex_position_t, simple_point<double> > >,
-    // edge properties
-    property<edge_weight_t, double> >
-    IndexGraph;
+    		// vertex properties
+    		property<vertex_index_t, int,
+    		property<vertex_position_t, simple_point<double> > >,
+    		// edge properties
+    		property<edge_weight_t, double> >
+    		IndexGraph;
 
     SEXP BGL_layout_internal (E_LAYOUT_METHOD method, 
          SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in, 
          SEXP radius,
-         SEXP R_weights_in, SEXP edge_or_side, SEXP es_length)
+         SEXP R_weights_in, SEXP edge_or_side, SEXP es_length,
+         SEXP R_minX, SEXP R_maxX, SEXP R_minY, SEXP R_maxY,
+         SEXP R_width, SEXP R_height
+         )
     {
-        IndexGraph g;
-
         if (!isInteger(R_edges_in)) error("R_edges_in should be integer");
 
+        int NV = asInteger(num_verts_in);
         int NE = asInteger(num_edges_in);
         int* edges_in = INTEGER(R_edges_in);
+
+        IndexGraph g(NV);
 
         for (int i = 0; i < NE ; i++, edges_in += 2)
             boost::add_edge(*edges_in, *(edges_in+1), g);
@@ -76,9 +86,49 @@ extern "C"
 	    else
 		    ok = kamada_kawai_spring_layout(g, p, w, side_length(l));
         }
+        else if ( method == E_LAYOUT_RANDOM)
+        {
+            double minX = REAL(R_minX)[0];
+            double maxX = REAL(R_maxX)[0];
+            double minY = REAL(R_minY)[0];
+            double maxY = REAL(R_maxY)[0];
+    
+            property_map<IndexGraph, vertex_position_t>::type 
+		    p = get(vertex_position, g);
 
-        SEXP anslst, poslst;
-        PROTECT(anslst = allocVector(VECSXP,1));
+            minstd_rand gen;
+            random_graph_layout(g, p, minX, maxX, minY, maxY, gen);
+        }
+        else if ( method == E_LAYOUT_FRFD)
+        {
+            double w = REAL(R_width)[0];
+            double h = REAL(R_height)[0];
+            
+            property_map<IndexGraph, vertex_position_t>::type 
+		    p = get(vertex_position, g);
+
+            minstd_rand gen;
+            random_graph_layout(g, p, -w/2, w/2, -h/2, h/2, gen);
+            fruchterman_reingold_force_directed_layout(g, p, w, h);
+        }
+        else if ( method == E_LAYOUT_GA )
+        {
+            double r = REAL(radius)[0];
+            double w = REAL(R_width)[0];
+            double h = REAL(R_height)[0];
+
+            property_map<IndexGraph, vertex_position_t>::type 
+		    p = get(vertex_position, g);
+
+            // TODO: fill in correct codes
+            //square_topology < > lst;
+            //gursoy_atun_layout(g, lst, p);
+        }
+        else
+        {
+        }
+
+        SEXP poslst;
         PROTECT(poslst = allocMatrix(REALSXP,2, num_vertices(g)));
 
         int i = 0;
@@ -91,16 +141,24 @@ extern "C"
             REAL(poslst)[i++] = (double)position[*vi].y;
         }
 
-        SET_VECTOR_ELT(anslst,0,poslst);
-        UNPROTECT(2);
-        return(anslst);
+        UNPROTECT(1);
+        return(poslst);
     }
 
     SEXP BGL_circle_layout
     (SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in, SEXP radius)
     {
-        SEXP anslst, dummy1=0, dummy2=0, dummy3=0;
-        anslst = BGL_layout_internal(E_LAYOUT_CIRCLE, num_verts_in, num_edges_in, R_edges_in, radius, dummy1, dummy2, dummy3);
+        SEXP dummy_weights=0, dummy_e_or_s=0, dummy_es_length=0;
+        SEXP dummy_minX=0, dummy_maxX=0, dummy_minY=0, dummy_maxY=0;
+        SEXP dummy_width=0, dummy_height=0;
+
+        SEXP anslst; 
+        anslst = BGL_layout_internal(E_LAYOUT_CIRCLE, 
+                 num_verts_in, num_edges_in, R_edges_in, 
+                 radius, 
+                 dummy_weights, dummy_e_or_s, dummy_es_length,
+                 dummy_minX, dummy_maxX, dummy_minY, dummy_maxY,
+                 dummy_width, dummy_height);
 
         return(anslst);
     }
@@ -109,141 +167,70 @@ extern "C"
     (SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in,
      SEXP R_weights_in, SEXP edge_or_side, SEXP es_length)
     {
-        SEXP anslst, dummy=0;
+        SEXP dummy_radius=0;
+        SEXP dummy_minX=0, dummy_maxX=0, dummy_minY=0, dummy_maxY=0;
+        SEXP dummy_width=0, dummy_height=0;
+
+        SEXP anslst; 
         anslst = BGL_layout_internal(E_LAYOUT_KKSL, 
                  num_verts_in, num_edges_in, R_edges_in, 
-                 dummy, R_weights_in, edge_or_side, es_length);
+                 dummy_radius, 
+                 R_weights_in, edge_or_side, es_length,
+                 dummy_minX, dummy_maxX, dummy_minY, dummy_maxY,
+                 dummy_width, dummy_height);
         return(anslst);
     }
 
     SEXP BGL_random_layout
-    (SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in, SEXP R_width, SEXP R_height)
+    (SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in, 
+     SEXP R_minX, SEXP R_maxX, SEXP R_minY, SEXP R_maxY)
     {
-        IndexGraph g;
+        SEXP dummy_radius=0; 
+        SEXP dummy_weights=0, dummy_e_or_s=0, dummy_es_length=0;
+        SEXP dummy_width=0, dummy_height=0;
 
-        if (!isInteger(R_edges_in)) error("R_edges_in should be integer");
-
-        int NE = asInteger(num_edges_in);
-        int* edges_in = INTEGER(R_edges_in);
-
-        for (int i = 0; i < NE ; i++, edges_in += 2)
-            boost::add_edge(*edges_in, *(edges_in+1), g);
-
-        double w = REAL(R_width)[0];
-        double h = REAL(R_height)[0];
-            
-        typedef std::vector<simple_point<double> > PositionVec;
-        PositionVec position_vec(num_vertices(g));
-        typedef iterator_property_map<PositionVec::iterator,
-                   property_map<IndexGraph, vertex_index_t>::type >
-                PositionMap;
-        PositionMap position(position_vec.begin(), get(vertex_index, g));
-
-        minstd_rand gen;
-        random_graph_layout(g, position, -w/2, w/2, -h/2, h/2, gen);
-
-        SEXP anslst, poslst;
-        PROTECT(anslst = allocVector(VECSXP,1));
-        PROTECT(poslst = allocMatrix(REALSXP,2, num_vertices(g)));
-
-        int i = 0;
-        graph_traits<IndexGraph>::vertex_iterator vi, vi_end;
-        for (tie(vi, vi_end) = vertices(g); vi != vi_end; ++vi)
-        {
-            REAL(poslst)[i++] = (double)position[*vi].x;
-            REAL(poslst)[i++] = (double)position[*vi].y;
-        }
-
-        SET_VECTOR_ELT(anslst,0,poslst);
-        UNPROTECT(2);
+        SEXP anslst; 
+        anslst = BGL_layout_internal(E_LAYOUT_RANDOM, 
+                 num_verts_in, num_edges_in, R_edges_in, 
+                 dummy_radius, 
+                 dummy_weights, dummy_e_or_s, dummy_es_length,
+                 R_minX, R_maxX, R_minY, R_maxY,
+                 dummy_width, dummy_height);
         return(anslst);
     }
 
     SEXP BGL_FRFD_layout
-    (SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in, SEXP R_width, SEXP R_height)
+    (SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in, 
+     SEXP R_width, SEXP R_height)
     {
-        IndexGraph g;
+        SEXP dummy_radius=0;
+        SEXP dummy_weights=0, dummy_e_or_s=0, dummy_es_length=0;
+        SEXP dummy_minX=0, dummy_maxX=0, dummy_minY=0, dummy_maxY=0;
 
-        if (!isInteger(R_edges_in)) error("R_edges_in should be integer");
-
-        int NE = asInteger(num_edges_in);
-        int* edges_in = INTEGER(R_edges_in);
-
-        for (int i = 0; i < NE ; i++, edges_in += 2)
-            boost::add_edge(*edges_in, *(edges_in+1), g);
-
-        double w = REAL(R_width)[0];
-        double h = REAL(R_height)[0];
-            
-        typedef std::vector<simple_point<double> > PositionVec;
-        PositionVec position_vec(num_vertices(g));
-        typedef iterator_property_map<PositionVec::iterator,
-                   property_map<IndexGraph, vertex_index_t>::type >
-                PositionMap;
-        PositionMap position(position_vec.begin(), get(vertex_index, g));
-
-        minstd_rand gen;
-        random_graph_layout(g, position, -w/2, w/2, -h/2, h/2, gen);
-        fruchterman_reingold_force_directed_layout(g, position, w, h);
-
-        SEXP anslst, poslst;
-        PROTECT(anslst = allocVector(VECSXP,1));
-        PROTECT(poslst = allocMatrix(REALSXP,2, num_vertices(g)));
-
-        int i = 0;
-        graph_traits<IndexGraph>::vertex_iterator vi, vi_end;
-        for (tie(vi, vi_end) = vertices(g); vi != vi_end; ++vi)
-        {
-            REAL(poslst)[i++] = (double)position[*vi].x;
-            REAL(poslst)[i++] = (double)position[*vi].y;
-        }
-
-        SET_VECTOR_ELT(anslst,0,poslst);
-        UNPROTECT(2);
+        SEXP anslst;
+        anslst = BGL_layout_internal(E_LAYOUT_FRFD,
+                 num_verts_in, num_edges_in, R_edges_in,
+                 dummy_radius,
+                 dummy_weights, dummy_e_or_s, dummy_es_length,
+                 dummy_minX, dummy_maxX, dummy_minY, dummy_maxY,
+                 R_width, R_height);
         return(anslst);
     }
 
     SEXP BGL_gursov_atun_layout
-    (SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in, SEXP R_width, SEXP R_height, SEXP R_radius)
+    (SEXP num_verts_in, SEXP num_edges_in, SEXP R_edges_in, 
+     SEXP R_width, SEXP R_height, SEXP R_radius)
     {
-        IndexGraph g;
+        SEXP dummy_weights=0, dummy_e_or_s=0, dummy_es_length=0;
+        SEXP dummy_minX=0, dummy_maxX=0, dummy_minY=0, dummy_maxY=0;
 
-        if (!isInteger(R_edges_in)) error("R_edges_in should be integer");
-
-        int NE = asInteger(num_edges_in);
-        int* edges_in = INTEGER(R_edges_in);
-
-        for (int i = 0; i < NE ; i++, edges_in += 2)
-            boost::add_edge(*edges_in, *(edges_in+1), g);
-
-        //double w = REAL(R_width)[0];
-        //double h = REAL(R_height)[0];
-            
-        // TODO: fill in correct codes
-        typedef std::vector< point > PositionVec;
-        PositionVec position_vec(num_vertices(g));
-        typedef iterator_property_map<PositionVec::iterator,
-                   property_map<IndexGraph, vertex_index_t>::type >
-                PositionMap;
-        PositionMap position(position_vec.begin(), get(vertex_index, g));
-
-        //square_topology < > lst;
-        //gursoy_atun_layout(g, lst, p);
-
-        SEXP anslst, poslst;
-        PROTECT(anslst = allocVector(VECSXP,1));
-        PROTECT(poslst = allocMatrix(REALSXP,2, num_vertices(g)));
-
-        int i = 0;
-        graph_traits<IndexGraph>::vertex_iterator vi, vi_end;
-        for (tie(vi, vi_end) = vertices(g); vi != vi_end; ++vi)
-        {
-            REAL(poslst)[i++] = (double)position[*vi].x;
-            REAL(poslst)[i++] = (double)position[*vi].y;
-        }
-
-        SET_VECTOR_ELT(anslst,0,poslst);
-        UNPROTECT(2);
+        SEXP anslst;
+        anslst = BGL_layout_internal(E_LAYOUT_FRFD,
+                 num_verts_in, num_edges_in, R_edges_in,
+                 R_radius,
+                 dummy_weights, dummy_e_or_s, dummy_es_length,
+                 dummy_minX, dummy_maxX, dummy_minY, dummy_maxY,
+                 R_width, R_height);
         return(anslst);
     }
 

@@ -1,4 +1,5 @@
 import("methods")
+import("graph")
 useDynLib(RBGL)
 
 export(
@@ -11,12 +12,14 @@ export(
  "biConnComp",
  "brandes.betweenness.centrality",
  "circle.layout",        
+ "circleLayout",        
  "clusteringCoef",
  "clusteringCoefAppr",
  "connectedComp",        
  "cuthill.mckee.ordering",
  "dag.sp",
  "dijkstra.sp",          
+ "dominatorTree",
  "edgeConnectivity",     
  "edmunds.karp.max.flow",
  "extractPath",
@@ -32,6 +35,7 @@ export(
  "isomorphism",
  "johnson.all.pairs.sp", 
  "kamada.kawai.spring.layout",
+ "kamadaKawaiSpringLayout",
  "kCores",
  "kCliques",
  "kingOrdering",

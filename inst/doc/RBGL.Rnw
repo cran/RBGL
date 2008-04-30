@@ -715,8 +715,7 @@ in matrix reordering, which turns a system of equations {\em A x = b} to
 renumbering its vertices.
 
 <<SparseMatrixOrderingdemo>>=
-dijk1 <- dijk
-dijk1 <- ugraph(dijk1)
+dijk1 <- ugraph(dijk)
 cuthill.mckee.ordering(dijk1)
 minDegreeOrdering(dijk1)
 sloan.ordering(dijk1)
@@ -797,10 +796,10 @@ Following functions are available:
 The \Rfunction{randomGraphLayout} function puts the vertices randomly 
 on a plane;
 
-The \Rfunction{circle.layout} function puts the vertices as vertices of 
+The \Rfunction{circleLayout} function puts the vertices as vertices of 
 a regular polygon;
 
-The \Rfunction{kamada.kawai.spring.layout} function is for connected, 
+The \Rfunction{kamadaKawaiSpringLayout} function is for connected, 
 undirected graphs, it treats the edges as springs and tries to minimize 
 the energy of the whole system;
 
@@ -814,8 +813,8 @@ initial positions of the vertices are set randomly by calling
 
 <<Layoutdemo2>>=
 randomGraphLayout(coex)
-circle.layout(coex)
-kamada.kawai.spring.layout(coex)
+circleLayout(coex)
+kamadaKawaiSpringLayout(coex)
 fruchtermanReingoldForceDirectedLayout(coex, 10, 10)
 @
 
@@ -825,7 +824,7 @@ If you want to draw the graphs based on the calculated coordinates, you need
 an additional function.  The following is an example.
 
 <<Layoutdemo3>>=
-crudeGraphPlot <- function(g, alg=circle.layout, ...) {
+crudeGraphPlot <- function(g, alg=circleLayout, ...) {
 #
 # the alg parameter is a function that computes the
 # layout of g, returning it as a list of length 1
@@ -833,7 +832,7 @@ crudeGraphPlot <- function(g, alg=circle.layout, ...) {
 # y coordinates, and node names are used as colnames
 # the ... are passed to segments()
 #
-  layout <- alg(g)[[1]]
+  layout <- alg(g)
   plot( layout[1,], layout[2,], pch=nodes(g), axes=FALSE,
     xlab="", ylab="", main=substitute(g), cex=1.4 )
   ee <- edges(g)
@@ -845,7 +844,7 @@ crudeGraphPlot <- function(g, alg=circle.layout, ...) {
 }
 
 crudeGraphPlot(coex)
-crudeGraphPlot(coex, alg=kamada.kawai.spring.layout, col="green")
+crudeGraphPlot(coex, alg=kamadaKawaiSpringLayout, col="green")
 @
 
 <<figlayout1, fig=TRUE, echo=false, results=hide, include=FALSE>>=
@@ -853,7 +852,7 @@ crudeGraphPlot(coex)
 @
 
 <<figlayout2, fig=TRUE, echo=false, results=hide, include=FALSE>>=
-crudeGraphPlot(coex, alg=kamada.kawai.spring.layout, col="green")
+crudeGraphPlot(coex, alg=kamadaKawaiSpringLayout, col="green")
 @
 
 \begin{figure}[tp]
@@ -867,7 +866,7 @@ crudeGraphPlot(coex, alg=kamada.kawai.spring.layout, col="green")
 \caption{\label{fig:graphlayout}%
 a) plot(coex, neato).
 b) crudeGraphPlot(coex).
-c) crudeGraphPlot(coex, alg=kamada.kawai.spring.layout, col="green"). }
+c) crudeGraphPlot(coex, alg=kamadaKawaiSpringLayout, col="green"). }
 \end{figure}
 
 Call crudeGraphPlot(coex) gives the default circular layout on your graphics device.

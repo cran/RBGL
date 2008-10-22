@@ -1,5 +1,5 @@
 Package: RBGL
-Version: 1.17.2
+Version: 1.18.0
 Title: An interface to the BOOST graph library
 Author: Vince Carey <stvjc@channing.harvard.edu>, Li Long
         <li.long@isb-sib.ch>, R. Gentleman
@@ -12,4 +12,4 @@ biocViews: GraphsAndNetworks
 License: The Artistic License, Version 2.0
 URL: http://www.bioconductor.org
 LazyLoad: yes
-Packaged: Sat Aug 23 13:45:21 2008; biocbuild
+Packaged: Wed Oct 22 00:53:22 2008; biocbuild

@@ -44,7 +44,7 @@ Functions \tab parameters \cr
 \tabular{ll}{
 Functions \tab parameters \cr 
 \code{\link[RBGL]{mstree.kruskal}} \tab \code{x}\cr
-\code{\link[RBGL]{prim.minST}} \tab \code{g}\cr
+\code{\link[RBGL:mstree.prim]{prim.minST}} \tab \code{g}\cr
 }
 }
 \section{ ConnectedComponents }{
@@ -63,7 +63,7 @@ Functions \tab parameters \cr
 
 \tabular{ll}{
 Functions \tab parameters \cr 
-\code{\link[RBGL:maxFlow]{edmunds.karp.max.flow}} \tab \code{g,source,sink}\cr
+\code{\link[RBGL:maxFlow]{edmonds.karp.max.flow}} \tab \code{g,source,sink}\cr
 \code{\link[RBGL:maxFlow]{push.relabel.max.flow}} \tab \code{g,source,sink}\cr
 }
 }

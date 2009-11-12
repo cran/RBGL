@@ -513,7 +513,7 @@ transitive.closure <- function (g)
 
 }
 
-max.flow.internal <- function (g, source, sink, method="Edmunds.Karp")
+max.flow.internal <- function (g, source, sink, method="Edmonds.Karp")
 {
     if (!isDirected(g)) stop("only applicable to directed graphs")
 
@@ -537,12 +537,20 @@ max.flow.internal <- function (g, source, sink, method="Edmunds.Karp")
                  as.integer(em-1), as.double(eW), 
                  as.integer(s-1), as.integer(t-1), 
                  PACKAGE="RBGL")
-    else  # Edmunds.Karp
-         ans <- .Call("BGL_edmunds_karp_max_flow", 
+    else  if ( method == "Edmonds.Karp" ) 
+         ans <- .Call("BGL_edmonds_karp_max_flow", 
                  as.integer(nv), as.integer(ne), 
                  as.integer(em-1), as.double(eW), 
                  as.integer(s-1), as.integer(t-1), 
                  PACKAGE="RBGL")
+    else if ( method == "Kolmogorov")
+         ans <- .Call("BGL_kolmogorov_max_flow", 
+                 as.integer(nv), as.integer(ne), 
+                 as.integer(em-1), as.double(eW), 
+                 as.integer(s-1), as.integer(t-1), 
+                 PACKAGE="RBGL")
+    else 
+	stop("unknown method")
 
     rownames(ans[[2]]) <- c("from", "to")
     rownames(ans[[3]]) <- c("flow")
@@ -554,14 +562,37 @@ max.flow.internal <- function (g, source, sink, method="Edmunds.Karp")
     list("maxflow"=ans[[1]], "edges"=ans[[2]], "flows"=ans[[3]])
 }
 
-edmunds.karp.max.flow <- function (g, source, sink)
+edmonds.karp.max.flow <- function (g, source, sink)
 {
-    max.flow.internal(g, source, sink, "Edmunds.Karp")
+    max.flow.internal(g, source, sink, "Edmonds.Karp")
 }
 
 push.relabel.max.flow <- function (g, source, sink)
 {
     max.flow.internal(g, source, sink, "Push.Relabel")
+}
+
+kolmogorov.max.flow <- function(g, source, sink)
+{
+    max.flow.internal(g, source, sink, "Kolmogorov")
+}
+
+edmondsMaxCardinalityMatching <- function(g)
+{
+    nv <- length(nodes(g))
+    em <- edgeMatrix(g)
+    ne <- ncol(em)
+
+    ans <- .Call("edmondsMaxCardinalityMatching", 
+                as.integer(nv), as.integer(ne), as.integer(em-1),
+                PACKAGE="RBGL")
+
+    ans[[1]] <- as.logical(ans[[1]])
+    ans[[2]] <- apply(ans[[2]], 2, function(x) { nodes(g)[x+1] } )
+    rownames(ans[[2]]) <- c("vertex", "matched vertex")
+    names(ans) <- c("Is max matching: ", "Matching: ")
+
+    ans
 }
 
 isomorphism <- function(g1, g2)
@@ -1174,26 +1205,15 @@ dominatorTree <- function(g, start=nodes(g)[1])
    ans
 }
 
-kolmogorovMaxFlow <- function(g)
-{
-   list("This function is not implemented yet")
-}
-
-edmondsMaxCardinalityMatching <- function(g)
-{
-   list("This function is not implemented yet")
-}
-
 sloanStartEndVertices<- function(g)
 {
-   list("This function is not implemented yet")
+   list("this is a helper-function for sloan-ordering, used explicitly" )
 }
 
-lengauerTarjanDominatorTree<- function(g)
+lengauerTarjanDominatorTree<- function(g, start=nodes(g)[1])
 {
-   list("This function is not implemented yet")
+   dominatorTree(g, start)
 }
-
 
 minimumCycleRatio<- function(g)
 {
@@ -1205,50 +1225,211 @@ maximumCycleRatio<- function(g)
    list("This function is not implemented yet")
 }
 
-
 boyerMyrvoldPlanarityTest<- function(g)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+
+   ans <- .Call("boyerMyrvoldPlanarityTest",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), PACKAGE="RBGL")
+
+   as.logical(ans)
 }
 
 planarFaceTraversal<- function(g)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+
+   ans <- .Call("planarFaceTraversal",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), PACKAGE="RBGL")
+
+   ans <- sapply(ans, function(x, y) y[x+1], nodes(g))
+
+   ans
 }
 
 planarCanonicalOrdering<- function(g)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+
+   ans <- .Call("planarCanonicalOrdering",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), PACKAGE="RBGL")
+
+   ans <- sapply(ans, function(x, y) y[x+1], nodes(g))
+   
+   ans
 }
 
 chrobakPayneStraightLineDrawing<- function(g)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+
+   ans <- .Call("chrobakPayneStraightLineDrawing",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), PACKAGE="RBGL")
+
+   colnames(ans) <- nodes(g)
+   rownames(ans) <- c("x", "y")
+
+   ans
 }
 
-isStraightLineDrawing<- function(g)
+isStraightLineDrawing<- function(g, drawing)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+ 
+   if ( !is.matrix(drawing) || nrow(drawing) != 2 || ncol(drawing) != nv ) 
+      stop("needs 2xm matrix for coordinates")
+
+   ans <- .Call("isStraightLineDrawing",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), as.integer(drawing),
+		PACKAGE="RBGL")
+
+   as.logical(ans)
 }
 
 isKuratowskiSubgraph<- function(g)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+
+   ans <- .Call("isKuratowskiSubgraph",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), PACKAGE="RBGL")
+
+   ans[[1]] <- as.logical(ans[[1]])
+   ans[[2]] <- as.logical(ans[[2]])
+   ans[[3]] <- apply(ans[[3]], 2, function(x) nodes(g)[x+1])
+   rownames(ans[[3]]) = c("from", "to")
+
+   list("Is planar: " = ans[[1]], 
+	"Is there a Kuratowski Subgraph: " = ans[[2]], 
+	"Edges of Kuratowski Subgraph: " = ans[[3]])
 }
 
 makeConnected<- function(g)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+
+   ans <- .Call("makeConnected",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), PACKAGE="RBGL")
+
+   ans <- apply(ans, 2, function(x) { nodes(g)[x+1] } )
+
+   gn = new("graphNEL", nodes=nodes(g), edgemode="undirected")
+   gn <- addEdge(ans[1,], ans[2, ], gn)
+
+   gn 
 }
 
 makeBiconnectedPlanar<- function(g)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+
+   ans <- .Call("makeBiconnectedPlanar",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), PACKAGE="RBGL")
+
+   names(ans) <- c("Is planar: ", "new graph")
+   ans[[1]] <- as.logical(ans[[1]])
+
+   if ( ans[[1]] )
+   {
+      ans[[2]] <- apply(ans[[2]], 2, function(x) { nodes(g)[x+1] } )
+
+      gn = new("graphNEL", nodes=nodes(g), edgemode="undirected")
+      gn <- addEdge(ans[[2]][1,], ans[[2]][2, ], gn)
+
+      ans[[2]] <- gn 
+   }
+
+   ans
 }
 
 makeMaximalPlanar<- function(g)
 {
-   list("This function is not implemented yet")
+   if(isDirected(g)) stop("only appropriate for undirected graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+
+   ans <- .Call("makeMaximalPlanar",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), PACKAGE="RBGL")
+
+   names(ans) <- c("Is planar: ", "new graph")
+   ans[[1]] <- as.logical(ans[[1]])
+
+   if ( ans[[1]] )
+   {
+      ans[[2]] <- apply(ans[[2]], 2, function(x) { nodes(g)[x+1] } )
+
+      gn = new("graphNEL", nodes=nodes(g), edgemode="undirected")
+      gn <- addEdge(ans[[2]][1,], ans[[2]][2, ], gn)
+
+      ans[[2]] <- gn 
+   }
+
+   ans
 }
 
+
+edmondsOptimumBranching <- function(g)
+{
+   if(!isDirected(g)) stop("only appropriate for directed graphs")
+
+   nv <- length(nodes(g))
+   em <- edgeMatrix(g)
+   ne <- ncol(em)
+   eW <- unlist(edgeWeights(g))
+
+   ans <- .Call("edmondsOptimumBranching",
+                as.integer(nv), as.integer(ne),
+                as.integer(em-1), as.double(eW),
+		PACKAGE="RBGL")
+
+    ans[[1]] <- apply(ans[[1]], 2, function(x, y) y[x+1], nodes(g))
+    rownames(ans[[1]]) <- c("from", "to")
+    rownames(ans[[2]]) <- c("weight")
+    names(ans) <- c("edgeList", "weights")
+    ans$nodes <- unique(as.vector(ans[[1]]))
+    ans
+
+}
 
